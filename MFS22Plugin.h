@@ -4,6 +4,15 @@
 #pragma comment(lib, "Ws2_32.lib")
 #pragma warning(disable:4996) 
 
+
+#ifdef __GNUC__
+#define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+#endif
+
+#ifdef _MSC_VER
+#define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <winsock2.h>
@@ -11,6 +20,7 @@
 #include <iostream>
 #include <windows.h>
 #include <iomanip>
+#include <memory>
 
 #include "SimConnect.h"
 
@@ -30,21 +40,23 @@ static enum DATA_REQUEST_ID
 
 //static const char* datatitles[] = { "T", "ax", "ay", "az", "roll", "pitch", "yaw", "vroll", "vpitch", "vyaw", "GS", "mass",
 										//"ph_x", "ph_y", "ph_z", "ph_roll", "ph_pitch", "ph_yaw", "zulu_time" }; //nc4 (add header)
-struct SimResponse
+PACK(struct SimResponse
 {
-	float dt; //ANIMATION DELTA TIME [Seconds]
-	float ax; //ACCELERATION BODY X [Feet (ft) per second squared]
-	float ay; //ACCELERATION BODY Y
-	float az; //ACCELERATION BODY Z
-	float roll;//PLANE BANK DEGREES [Radians]
-	float pitch;//PLANE PITCH DEGREES [Radians]
-	float yaw;//PLANE HEADING DEGREES TRUE	 [Radians]
-	float vroll;//ROTATION VELOCITY BODY X
-	float vpitch;//ROTATION VELOCITY BODY Y
-	float vyaw;//ROTATION VELOCITY BODY Z
-	float GS;//GROUND VELOCITY
-	float mass;// TOTAL WEIGHT[Pounds]
-};
+	double dt; //ANIMATION DELTA TIME [Seconds]
+	double bank;//PLANE BANK DEGREES [Radians]
+	double pitch;//PLANE PITCH DEGREES [Radians]
+	double head;//PLANE HEADING DEGREES TRUE	 [Radians]
+	double ax; //ACCELERATION BODY X [Feet (ft) per second squared]
+	double ay; //ACCELERATION BODY Y
+	double az; //ACCELERATION BODY Z
+	double wx;//ROTATION VELOCITY BODY X
+	double wy;//ROTATION VELOCITY BODY Y
+	double wz;//ROTATION VELOCITY BODY Z
+	double GS;//GROUND VELOCITY
+	double mass;// TOTAL WEIGHT[Pounds]
+};)
+
+
 
 void CALLBACK MyDispatchProc(SIMCONNECT_RECV* pData, DWORD cbData, void* pContext);
 

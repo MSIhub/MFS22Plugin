@@ -14,18 +14,18 @@ int main()
 	
 
 	//Requesting Data
-	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "ANIMATION DELTA TIME", "Seconds", SIMCONNECT_DATATYPE_FLOAT32); //Default is float64
-	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "ACCELERATION BODY X", "Feet (ft) per second squared", SIMCONNECT_DATATYPE_FLOAT32); //Default is float64
-	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "ACCELERATION BODY Y", "Feet (ft) per second squared", SIMCONNECT_DATATYPE_FLOAT32);
-	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "ACCELERATION BODY Z", "Feet (ft) per second squared", SIMCONNECT_DATATYPE_FLOAT32);
-	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "PLANE BANK DEGREES", "Radians", SIMCONNECT_DATATYPE_FLOAT32);
-	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "PLANE PITCH DEGREES", "Radians", SIMCONNECT_DATATYPE_FLOAT32);
-	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "PLANE HEADING DEGREES TRUE", "Radians", SIMCONNECT_DATATYPE_FLOAT32);
-	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "ROTATION VELOCITY BODY X", "Feet (ft) per second", SIMCONNECT_DATATYPE_FLOAT32);
-	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "ROTATION VELOCITY BODY Y", "Feet (ft) per second", SIMCONNECT_DATATYPE_FLOAT32);
-	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "ROTATION VELOCITY BODY Z", "Feet (ft) per second", SIMCONNECT_DATATYPE_FLOAT32);
-	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "GROUND VELOCITY", "Knots", SIMCONNECT_DATATYPE_FLOAT32);
-	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "TOTAL WEIGHT", "Pounds", SIMCONNECT_DATATYPE_FLOAT32);
+	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "ANIMATION DELTA TIME", "Seconds"); //Default is float64
+	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "PLANE BANK DEGREES", "Radians");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "PLANE PITCH DEGREES", "Radians");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "PLANE HEADING DEGREES TRUE", "Radians");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "ACCELERATION BODY X", "Feet");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "ACCELERATION BODY Y", "Feet");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "ACCELERATION BODY Z", "Feet");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "ROTATION VELOCITY BODY X", "Radians");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "ROTATION VELOCITY BODY Y", "Radians");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "ROTATION VELOCITY BODY Z", "Radians");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "GROUND VELOCITY", "Knots");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_1, "TOTAL WEIGHT", "Pounds");
 
 	hr = SimConnect_RequestDataOnSimObject(hSimConnect, REQUEST_1, DEFINITION_1, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_SIM_FRAME);
 
@@ -65,19 +65,26 @@ void CALLBACK MyDispatchProc(SIMCONNECT_RECV* pData, DWORD cbData, void * pConte
 		{
 		case REQUEST_1:
 		{
-
+			
 			SimResponse* pS = (SimResponse*)&pObjData->dwData;
+
 			//SEND DATA THROUGH SOCKET
 			MPD_CalculateMotionData(pS);
 			float t = MPD_MotionData[0];
-			float hz = 1.0f / (pS->dt);
-
+			float hz = 1.0f / (0.04);
 
 			if (int res = sendto(client_socket, (char*)MPD_MotionData, sizeof(MPD_MotionData), 0, (sockaddr*)&server, sizeof(sockaddr_in)) == SOCKET_ERROR)
 				printf("sendto() failed with error code: %d", WSAGetLastError());
-			else 
+			else
+			{ 
 				printf("send ok [%d] [%dHz]\n", res, (int)hz);
+				//memset(MPD_MotionData, 0, sizeof(MPD_MotionData));
+			}
 			
+			/*	std::cout << pS->dt << "\t" << pS->roll * (57.2958) << "\t" << pS->pitch * (57.2958) << "\t" << pS->yaw * (57.2958) << "\t" << pS->ax * 0.3048 << "\t" << pS->ay * 0.3048 << "\t" << pS->az * 0.3048 << "\t" << pS->vroll << "\t" << pS->vpitch  << "\t" << pS->vyaw << "\t" << pS->GS << "\t" << pS->mass << "\n" << std::flush;*/
+			//std::cout << pS->vroll * (57.2958) << "\t" << pS->vpitch * (57.2958) << "\t" << pS->vyaw * (57.2958) << "\n" << std::flush;
+			//std::cout << pS->ax * 0.3048 << "\t" << pS->ay * 0.3048 << "\t" << pS->az * 0.3048 << "\n" << std::flush;
+
 			break;
 		}
 		}
@@ -208,19 +215,19 @@ void MPD_CalculateMotionData(SimResponse* pS)
 {
 	// Store the results in an array so that we can easily send it.
 	//CONVERT UNITS HERE
-	current_time += pS->dt;
+	current_time += (float)pS->dt;
 	MPD_MotionData[0] = current_time;
-	MPD_MotionData[1] = pS->ax;
-	MPD_MotionData[2] = pS->ay;
-	MPD_MotionData[3] = pS->az;
-	MPD_MotionData[4] = pS->roll;
-	MPD_MotionData[5] = pS->pitch;
-	MPD_MotionData[6] = pS->yaw;
-	MPD_MotionData[7] = pS->vroll;
-	MPD_MotionData[8] = pS->vpitch;
-	MPD_MotionData[9] = pS->vyaw;
-	MPD_MotionData[10] = pS->GS;
-	MPD_MotionData[11] = pS->mass;
+	MPD_MotionData[1] = (float)pS->ax * -0.3048f;
+	MPD_MotionData[2] = (float)pS->ay * 0.3048f;
+	MPD_MotionData[3] = (float)pS->az * -0.3048f;
+	MPD_MotionData[4] = (float)pS->bank;
+	MPD_MotionData[5] = (float)pS->pitch;
+	MPD_MotionData[6] = (float)pS->head;
+	MPD_MotionData[7] = (float)pS->wz;
+	MPD_MotionData[8] = (float)pS->wx;
+	MPD_MotionData[9] = (float)pS->wy*-1.0f;
+	MPD_MotionData[10] = (float)pS->GS;
+	MPD_MotionData[11] = (float)pS->mass;
 	MPD_MotionData[12] = 0.0f;
 	MPD_MotionData[13] = 0.0f;
 	MPD_MotionData[14] = 0.0f;
